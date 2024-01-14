@@ -1,0 +1,501 @@
+n---
+title: 'Lab0: Initial Setup'
+author: "Stats215: Stochastic Models for Biology"
+date: "1/9/2024"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# R and RStudio
+
+This lab will help you prepare your computer environment for the 
+practical component of STATS215. You will learn how to install or update
+R and RStudio, as well as how to obtain R-packages, and makes sure you have
+right versions of the software.
+
+We will introduce Github and provide resources for you to set up version control using RStudio.
+
+## Getting R
+
+**R is a free software** available for download from 
+[CRAN](https://cran.rstudio.com/), the Comprehensive R Archive Network.
+The latest release of R is 4.3.1, *Beagle Scouts*. 
+
+If you do not have R installed yet or have an out of date version, please 
+**go to [https://cran.rstudio.com/](https://cran.rstudio.com/) and download**
+the precompiled binary distribution for your operating system.
+The links for Linux/Mac/Windows appear on the top of the website, as shown
+in the image below. After downloading an appropriate file, open it and **follow 
+the instructions to complete the installation.**
+
+If you are using a Mac and it is recent (M1/M2) called
+the silicon Macs 
+do not choose the **R-4.3.3-arm64.pkg**,  you can download
+**R-4.3.3-x86_64.pkg** it works universally.
+
+It is best to keep the same version installed all through the quarter.
+
+<br><br>
+
+![](figs/cran.png)
+<br><br>
+
+
+## Getting RStudio
+
+**RStudio is an IDE** (Integrated Development Environment) for R. It provides
+you with a powerful interface for working with R, which includes a 
+**text editor** where you can write your code and/or notes.
+
+To get RStudio go to the posit download site [https://posit.co/download/rstudio-desktop/](https://posit.co/download/rstudio-desktop/)
+and download a free version by clicking the blue button 
+'DOWNLOAD' below the "RStudio Desktop" column (free) and then choosing the file appropriate for your OS. 
+Open the file and follow the instructions.
+<br><br>
+![](figs/rstudio.png)
+
+<br>
+
+If you encounter issues with or need more detailed guidance on the installation 
+process, please ask one of the TAs for assistance.
+
+
+To test whether the installation of R and RStudio was successful, open RStudio
+and in the Console tab, type in a simple arithmetic calculation e.g.:
+
+```{r, eval = FALSE}
+1+1
+2^3
+```
+
+to see if the commands execute and the results are correct.
+
+
+# R packages
+
+R is a extensible system which allows code contribution from its users in form
+of R-*packages*. The packages are deposited on repositories such as 
+[CRAN](https://cran.r-project.org/), [Bioconductor](http://bioconductor.org/), 
+or [GitHub](https://github.com/).
+
+## CRAN
+
+CRAN, *Comprehensive R Archive Network* is a location where you can download 
+both R and its packages. The repository stores the core set of packages,
+which are included by default with the R installation. As of today,
+there are more than 17,300 packages on CRAN.
+
+To install a package from CRAN, e.g. \texttt{tidyverse} simply type in the
+following command into R-console:
+
+```{r, eval = FALSE}
+install.packages("tidyverse", dependencies = TRUE)
+```
+
+
+Using the argument `dependencies = TRUE`, we are being explicit and 
+extra-careful to install any additional packages the target package, 
+`tidyverse`, requires.
+
+You can then load a package using the `library` command:
+```{r, eval=FALSE}
+library("tidyverse")
+```
+
+Please check if you have the latest versions of `knitr` (1.34) 
+and `rmarkdown` (2.10) packages installed on your system. If not,
+use an installation command just like the one above (replacing "tidyverse" with "knitr" and/or "rmarkdown") 
+to install the two packages. These two packages include utilities for generating R documents.
+
+For example, you can check this as follows:
+
+```{r, eval=FALSE}
+packageVersion("rmarkdown")
+```
+
+## Bioconductor
+
+Bioconductor is a special repository of programs, different
+from CRAN.
+
+[**Bioconductor**](http://bioconductor.org/about/), is another open source 
+project devoted to providing tools for the analysis and exploration of 
+high-throughput genomic data. On this repository you will find many packages 
+developed for statistical analysis and visualization of biological data.
+
+The most current release of Bioconductor is 3.18 which works with R 4.3 and above.
+Please make sure that you update both R and Bioconductor for this class and please do not update it until the end of the quarter.
+
+To get the latest version of Bioconductor, you need to first make sure
+that you have the latest release of R (4.3). To check what version of R you have,
+execute the following command in the R-console (make sure it says
+at least 4.3):
+
+```{r}
+R.Version()$version.string
+```
+
+
+Then, to obtain Bioconductor packages, run the following code again from the console:
+
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+```
+
+
+You can check the version of Bioconductor using:
+```{r, eval=TRUE}
+BiocManager::version()
+```
+
+Once, you have the Bioconductor Manager, its packages can be installed with the following 
+command: `BiocManager::install("package_name")`. For example, to install a package
+called `GenomicFeatures` you call:
+
+
+```{r, eval = FALSE}
+BiocManager::install("GenomicFeatures")
+```
+
+You can install multiple packages at once by providing a vector
+of package names e.g.
+
+```{r, eval=FALSE}
+BiocManager::install(c("GenomicFeatures", "AnnotationDbi", "Biostrings"))
+```
+
+You can check this worked by trying to load these packages:
+
+```{r, eval=FALSE}
+library("GenomicFeatures")
+```
+
+Furthermore, for our next Lab, we will need the *C.elegans* genome, which can also be downloaded from Bioconductor:
+```{r, eval=FALSE}
+BiocManager::install("BSgenome.Celegans.UCSC.ce2")
+```
+
+Try loading it just as any other R package:
+
+```{r, eval=FALSE}
+library("BSgenome.Celegans.UCSC.ce2")
+```
+
+If the above worked you can now access the genome (but do not worry about details, we will get to these in the next lab):
+
+```{r, eval=FALSE}
+Celegans
+```
+
+
+##  Packages deposited on `GitHub` 
+
+Many developers upload their R code on [GitHub](https://github.com/).
+In a lot of the cases, developers upload the latest version 
+of their packages' changes on GitHub. The development
+version contains the most recent changes, but this also means that the code is
+not fully tested and might contain bugs. Thus, the GitHub packages should
+be used with care.
+
+To be able to access and install R-packages on GitHub you first need to 
+install the `devtools` package from CRAN:
+
+```{r, eval = FALSE}
+install.packages("devtools")
+```
+Then, you can install packages, e.g. the `beyonce` package for additional R color palettes, using the following code:
+
+```{r, eval=FALSE}
+# first load devtools package into memory
+library(devtools)
+# then, install a package using a package URL address
+install_github("dill/beyonce")
+```
+
+Note, that you need to provide the `install_github()` function the repository name of
+the package that you would like to install in the format username/repo, e.g. for [https://github.com/dill/beyonce](https://github.com/dill/beyonce) we used the argument `"dill/beyonce"`.
+
+
+# R document types
+
+RStudio incorporates a very user-friendly text editor. Using this program
+you can type regular text, e.g. notes and comments, as well as write, 
+debug and execute your R code. The `rmarkdown` and `knitr` packages allow
+you to render/convert your R files into '.pdf' or '.html' output formats.
+Many [books](https://bookdown.org/) have been written with R markdown, 
+although the textbook you will be using for BIOS221 was written in a more recent tool called [quarto](https://quarto.org/docs/get-started/hello/rstudio.html). 
+
+## R Scripts
+
+When writing an R program, or any longer set of commands, you should not
+type your code directly into the console for immediate execution. Instead,
+you should gather all your code (with comments) in a document. The simplest way to do that is to save your program as a R-script, which is 
+basically a text file storing all your R code. 
+
+To start a new R-script, press a black triangle dropdown button
+![](figs/add_doc.png){height=20px} in the top-left corner of your RStudio window. 
+You will see multiple options of file formats to choose from, like in 
+the picture below:
+
+<br>
+![](figs/rdocs.png)
+<br><br>
+
+Choose the first option `R Script`. You will see a new source code panel, and
+a tab `Untitled1` will appear on top of your R console. In this panel, you
+can write and edit your R code. 
+
+Now, type in a few lines of simple code into `Untitled1`, e.g.
+
+```{r, eval=FALSE}
+x <- seq(0, 10, length.out = 1000)
+y <- x*sin(2*pi*x)
+plot(x, y)
+```
+
+To execute your code, highlight the portion you want to evaluate and then press the `Run` button on the top-right corner
+of your panel, like the one marked with green circle in the image below.
+Alternatively, you can also evaluate your code by highlighting it and then 
+pressing the keyboard shortcut `Ctrl` (`Command` on macOS X) + `Enter`.
+
+To save your code, press the floppy disk button like the one marked with
+a red circle in the image below. Pick a location and a name for your file,
+and press `Save`. Your R-script file will have an extension '.R' to indicate
+that it contains R code. 
+
+<br>
+![](figs/rscript.png)
+<br><br>
+
+R programs saved as an R script file can be executed from the R console or another R script with the R function `source("my_r_file.R")`. As you might expect, clicking ![](figs/source_button.png){height=18px} on the top right will run the currently open script in its entirety. 
+If you don't want to run your R script in the currently active RStudio
+session because it might overwrite variables you've already created, you can run a script 
+named `my_r_file.R` by simply typing the following into your *terminal*: `Rscript my_r_file.R`.
+
+## R Markdown
+
+Another type of file you can edit in RStudio is R Markdown. 
+Using R Markdown you can generate reports which combine your notes,
+and comments (regular text) together with R code and its outputs 
+(e.g. computed values, statistics, and plots). R Markdown facilitates
+reproducible research, as you can save the entire data analysis 
+process (including all data transformation and normalization steps,
+and choices of parameters used for statistical methods) in a single report, 
+and then share it with your collaborators. This document allows other people 
+to reproduce your analysis and obtain the same results.
+
+R Markdown supports a number of static and dynamic output formats, including
+[HTML](https://rmarkdown.rstudio.com/html_document_format.html),
+[PDF](https://rmarkdown.rstudio.com/pdf_document_format.html), 
+[MS Word](https://rmarkdown.rstudio.com/word_document_format.html), 
+[Beamer Presentations](https://rmarkdown.rstudio.com/beamer_presentation_format.html),
+[shiny applications](https://rmarkdown.rstudio.com/authoring_shiny.html),
+even [books](https://bookdown.org/) and [websites](https://rmarkdown.rstudio.com/rmarkdown_websites.html).
+
+To start working on a R Markdown file, again press the dropdown button
+![](figs/add_doc.png){height=20px} as you did for the R scripts,
+but instead select the `R Markdown` option. You will see the following window
+appear:
+
+<br>
+![](figs/rmarkdown_popup.png){width=60%}
+<br><br>
+
+Fill in the `Title` and `Author` field, choose the output format 
+('HTML/PDG/Word'), and then press 'OK'. You will notice a new tab 'Untitled1' 
+in the source code panel appear, just like in the image below:
+
+
+<br>
+![](figs/rmarkdown.png)
+<br><br>
+
+This is your new R Markdown file, with a '.Rmd' extension. 
+Note, that the document starts with the 'front-matter', which specifies
+the title, author, date and the output format for your document:
+
+<br>
+![](figs/front-matter.png){width=70%}
+<br><br>
+
+Below the front matter, a few default examples are included. Before
+deleting them, note that R Markdown format is similar to
+the traditional [markdown format](https://www.markdownguide.org/). 
+
+* section titles/headers are marked with a '#' symbol. You can use
+multiple hashtags e.g. '##' of '###' to obtain the size of the header you
+want (more hashtags means smaller fonts). 
+
+* regular text can be freely added as in standard text editors (just like
+in MS Word).
+
+* R code should be added inside 
+the [code chunks](https://rmarkdown.rstudio.com/lesson-3.html), i.e.
+should be separated from the text with the chunk delimiters ` ```{r} ` 
+and ` ``` `.
+
+You can learn more about R Markdown formatting in this [guide](https://rmarkdown.rstudio.com/html_document_format.html). RStudio also provides a cheatsheet for R Markdown, which you can access from RStudio by navigating to "Help > Cheatsheets > R Markdown Cheat Sheet".
+
+**To insert a new code chunk** into your file you can:
+
+* type in the chunk delimiters: ` ```{r} ` and ` ``` `
+* use the keyboard shortcut `Ctrl` + `Alt` + `I` 
+(for macOS X: `Command` + `Option` + `I`)
+* press the ![](figs/add_chunk.png){height=20px} button in the editor toolbar.
+
+You can play with the current document, add more text, and delete or add
+more code chunks. 
+
+**To render your '.Rmd' file**, press
+![](figs/knit.png){height=18px} in the editor toolbar on the top of the source code 
+panel. A new window will open, where you should set the location
+and name of your new '.Rmd' file. Your output document will be generated,
+and saved in the same location as your '.Rmd' file. 
+Note that you can choose a different output format from the dropdown
+list of ![](figs/knit.png){height=18px}:
+
+<br>
+![](figs/knitr_opts.png){width=20%}
+<br>
+
+Your new choice of output (HTML/PDF/Word) format will be reflected in
+the front-matter of the '.Rmd' file.
+
+To learn more about how to work with R Markdown documents, visit
+this [website](https://rmarkdown.rstudio.com/lesson-1.html).
+
+
+## R Notebook
+
+[R Notebooks](https://rmarkdown.rstudio.com/r_notebooks.html) are a feature
+of RStudio (only available in version 1.0 or higher). R Notebooks are 
+essentially R Markdown documents, but with the output automatically generated and they even contain python script and be more general notebooks.
+
+Whenever you start and save a new R Notebook, two files are generated
+-- one with '.Rmd' and the other with '.nb.html' extension. 
+The first holds your text and code (same as R Markdow), the second stores 
+the output.
+
+**The '.nb.html' is automatically updated** i.e. whenever you run a code chunk 
+using ![](figs/run_chunk.png){height=20px} the output will be immediately altered and 
+reflected in the '.nb.html' without having to render the entire document using ![](figs/knit.png){height=20px}).
+
+Note that for R notebooks, the output field in the front-matter will be 
+*html_notebook*:
+
+<br>
+![](figs/rnotebook.png){width="30%"}
+
+<br>
+
+More on R Notebooks can be found [here](https://rmarkdown.rstudio.com/r_notebooks.html).
+
+## RStudio : extra elements that can be helpful
+### Environment
+The top-right pane of the default RStudio window displays the `Environment`. This pane
+can be helpful for inspecting the values of the variables you have defined while
+running your script.
+
+Try running the following example in the R script we created earlier.
+
+```{r assign, echo=TRUE}
+cars.data = mtcars
+mpg.avg = mean(cars.data$mpg)
+hp.avg = mean(cars.data$hp)
+```
+In the environment, you should now see `cars.data`, `hp.avg`, and `mpg.avg` listed next to a summary of their values, along with any other variables that you might have already defined in this script from before.
+
+<br>
+![](figs/environment.png){width="50%"}
+
+<br>
+
+Double clicking on data tables like `cars.data` in R opens a new tab in your RStudio 
+session in which you can scroll through the columns and rows of the loaded table. 
+This graphical user interface for inspecting your data can be helpful for 
+sanity checking datasets you load into R before you analyze them.
+
+<br>
+![](figs/data_table.png){width="75%"}
+<br>
+
+The environment can also be helpful for noticing when you have overwritten variables. If you use a common, uninformative name for the variable such as `x`, it is easy to accidentally redefine the variable multiple times in the same script. Then, re-selecting and re-running an earlier portion of the script that relies on the original definition of `x` can return incorrect results. Using the environment to verify that the variables you require are loaded and avoiding the use of uninformative variable names can help you avoid this common pitfall.
+
+## Projects
+
+When you are working on a complicated data analysis project with multiple scripts and RMarkdown files, 
+it can be helpful to organize your work using an [RStudio project](https://support.rstudio.com/hc/en-us/articles/200526207-Using-Projects). You can think of
+a project as a directory managed by RStudio that contains all of the 
+files that you would need to reproduce your work, e.g. data files, analysis scripts, RMarkdown 
+documents. We will see how creating 
+an RStudio project can simplify juggling multiple data analysis tasks and
+restarting complicated work that you intend to stop and come back to. 
+
+To create a new project, click on ![](figs/new_proj.png){height=18px}, which is located on 
+the top-left of your screen next to the button that we used to create a new file.
+
+After clicking on `New Directory` and `New Project` in the first two prompts of the `New Project Wizard`, 
+you will see the following screen.
+
+<br>
+![](figs/new_project.png){width="75%"}
+<br>
+
+After choosing an informative (and perhaps aspirational) project name and a subdirectory to place the project directory in, click `Create Project`. Now, apply what we learned from the start of this lab to create two blank R files in this project: make one an RMarkdown file and the other an R script. In the script, write and source the following boilerplate code.
+```{r boilerplate, echo=T}
+x <- 1:10
+y <- 1:8
+```
+After completing this task, your window should look like the following:
+
+<br>
+![](figs/project_state.png){width="100%"}
+<br>
+
+Quit the RStudio session (clicking `Save` on the prompt to save the current environment), and navigate to the directory in which you have created your RStudio project using the file explorer on your computer (`Finder` on Mac OS). Double-clicking on the `.Rproj` file in this directory will then recreate the state of your project in RStudio exactly as you left it prior to closing the program. This feature can be particularly helpful when you are working on a complicated project with several scripts and variables loaded in your environment that would take time to redefine.
+
+RStudio projects can also help you simultaneously juggle multiple data analysis tasks. On the top right of your RStudio window, you can find a button with the same name as the project you have opened. Click on it and select `New Project`. 
+
+<br>
+![](figs/project_menu.png){width="25%"}
+<br>
+
+Repeat the same steps as before in the `New Project Wizard`. This time, however, in addition to choosing a different name for your project, check the box labeled `Open in new session`. 
+
+<br>
+![](figs/new_project2.png){width="75%"}
+<br>
+
+Clicking `Create Project` produces a *second* RStudio window for the new project. In addition to conveniently separating your work into two separate windows, creating a new RStudio project also creates a separate R session. This means that running a script in the second project we have created will not inadvertently overwrite variables in the environment associated with the first project. 
+
+
+## Version control and `GitHub`
+
+
+RStudio Projects are also designed to work seamlessly with version control software (e.g. Git) and remote repositories stored in the cloud (e.g. GitHub). These tools can be particularly useful when collaborating with other researchers on complex projects. Version control software such as Git creates checkpoints for your code, allowing you to easily revert to older versions of the scripts you have written if a new feature alters pre-existing functionality. Using remote repositories also simplifies the task of collaborating on the same code with multiple researchers. Explaining how to set up and use these tools is out of the scope of this lab, but if you are interested in learning more, this [tutorial](https://happygitwithr.com) is an excellent guide to getting started with Git in RStudio.
+One thing that has changed since the tutorial was written is that Github is requiring 2-factor authorization (2FA),
+so you will need to tell Rstudio about a token that Github generates for you, see [here](https://happygitwithr.com/https-pat).
+
+Let us know if you would like help using GitHub and we can walk you through the steps in the [tutorial](https://happygitwithr.com).
+
+Here is a suggestion from ChatGPT on how to clone an existing github project and use it in [RStudio:](https://chat.openai.com/share/5acbe8c6-6a6b-4e2d-b6f7-64fa6d4539a6)
+
+
+## Connecting RStudio to Github
+
+[How to connect RStduio and Github slides](https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/)
+
+
+## Using Copilot
+
+Here are a good set of slides on how to do this:
+[Tom Mock: setting up Copilot in RStudio](https://colorado.posit.co/rsc/rstudio-copilot/#/TitleSlide)
+
