@@ -1,22 +1,13 @@
-n---
-title: 'Lab0: Initial Setup'
-author: "Stats215: Stochastic Models for Biology"
-date: "1/9/2024"
-output: 
-  html_document:
-    toc: true
-    toc_float: true
+---
+title: "Lab0_Submission"
+author: "Khoa Hoang"
+date: "`r Sys.Date()`"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-#generate a transition matrix with 4 states A, C, G, T
-#each state has a 25% chance of transitioning to any other state
-#the transition matrix is a 4x4 matrix with each row summing to 1
-#the transition matrix is a stochastic matrix
-#the transition matrix is a Markov matrix
 
 ## Load libraries
 ```{r}
@@ -24,6 +15,7 @@ library(igraph)
 ```
 
 ```{r}
+set.seed(1234)
 # generate random transition matrix 4x4 with each row summing to 1
 transition_matrix <- matrix(runif(16), nrow=4, ncol=4)
 transition_matrix <- transition_matrix/rowSums(transition_matrix)
@@ -35,4 +27,3 @@ g <- graph.adjacency(transition_matrix, mode="directed", weighted=TRUE)
 plot(g, edge.label=round(E(g)$weight, 2), vertex.size=20, layout=layout.fruchterman.reingold)
 
 ```
-
