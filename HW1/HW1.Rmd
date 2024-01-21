@@ -1,0 +1,235 @@
+---
+title: "STAS 215 Homework 1"
+author: "Winter 2024"
+date: "Due: Jan 24 11:59pm"
+output: 
+  BiocStyle::html_document
+---
+
+
+## Instructions {.unnumbered}
+
+In this take home assignment you will practice stochastic modeling
+and generating useful graphics.
+
+You should write your answers in either an ``Rmd`` (R markdown) 
+or a ``qmd`` (quarto) document, 
+then compile it into an output report (either a ``.pdf`` or ``.html`` file format) for submission in canvas by uploading both the ``Rmd`` and the ``html`` or ``pdf`` files, please call your files ``sunetid_HW1.pdf`` where ``sunetid`` is replaced by yours.
+
+In order to run the Rmd file you will need to install BiocStyle
+package from Bioconductor, you can do so by running the following
+command in R (you only need to install it once):
+
+
+
+```{r}
+BiocManager::install("BiocStyle")
+```
+
+The assignment will be graded based on the correctness of your answers, 
+the quality of your explanations and the aesthetics of your plots, 
+the readability of your code and the documentation of your use of chatGPT. 
+
+Feel free to work on this assignment during the Labs/ Office hours (you can also ask for help from the TA during this time if you have trouble understanding some of the questions).
+
+Please use ``ggplot2`` for plotting when possible as these will look better. When using ```ChatGPT``` please provide the prompt you use and comment on the answer, 5 bonus points if you document
+a mistake it makes (limited to 2 mistakes).
+
+
+
+# Gambler's Ruin
+
+Consider a gambler who has an initial stake of $60, and repeatedly bets $1 on a game for which the probability of winning is $p$ and the probability of losing is $1-p$. Assume that the gambler decides to stop when their fortune reaches $100 or drops to 0, whichever comes first.
+
+**(a)** Simulate a stochastic process of the gambler's fortune, with $p=0.5$. Plot the gambler's fortune against time. *Hint: You can do so by adjusting the script of **gamblersruin.R**. The function can be found with the help of Copilot.*
+
+```{r}
+library(ggplot2)
+p = 0.5
+fortune = 60
+bet = 1
+upper_stop = 100
+lower_stop = 0
+
+gambler_sim <- function (p, fortune, bet, upper_stop, lower_stop, return_vect=T) {
+  fortune_vec = c(fortune)
+  while (fortune < upper_stop && fortune > lower_stop) {
+    fortune = fortune + sample(c(-bet, bet), size = 1, prob = c(1 - p, p))
+    if (return_vect) {
+      fortune_vec = c(fortune_vec, fortune)
+    }
+  }
+  if (return_vect) {
+    return(fortune_vec)
+  } else {
+    return(fortune == upper_stop)
+  }
+}
+
+set.seed(1809)
+one_game <- gambler_sim(p, fortune, bet, upper_stop, lower_stop)
+#ggplot 
+ggplot(data.frame(one_game), aes(x = seq_along(one_game), y = one_game)) + 
+  geom_line() + 
+  geom_hline(yintercept = c(upper_stop, lower_stop), linetype = "dashed") + 
+  labs(x = "Time", y = "Fortune") + 
+  theme_bw()
+
+```
+
+
+
+**(b)** Under the setting of (a), simulate the probability the gambler wins $100 before losing everything.
+
+
+```{r}
+set.seed(1809)
+N = 1000
+#simulate N times
+sim <- replicate(N, gambler_sim(p, fortune, bet, upper_stop, lower_stop, return_vect = F))
+#probability of winning
+mean(sim)
+```
+
+**(c)** Now instead assume $p=0.55$, simulate the probability the gambler wins $100 before losing everything.
+
+```{r}
+set.seed(1809)
+N = 1000
+#simulate N times
+sim <- replicate(N, gambler_sim(p=0.55, fortune, bet, upper_stop, lower_stop, return_vect = F))
+#probability of winning
+mean(sim)
+
+```
+
+
+#  Monte Carlo Method
+
+The time until a bus arrives has an exponential distribution with mean 30 minutes. We will see later in this course that this is essentially a Poisson Process.
+
+**(a)** Draw 1000 samples from the distribution.
+
+```{r}
+set.seed(1809)
+# draw 1000 samples from exponential distribution with mean = 30
+samples <- rexp(1000, rate = 1/30)
+```
+
+
+**(b)** Simulate the probability that the bus arrives in the first 20 minutes.
+
+```{r}
+# probability that the bus arrives in the first 20 minutes
+mean(samples <= 20)
+```
+
+
+**(c)** Compare with the exact probability that the bus arrives in the first 20 minutes. *Hint: You can do so by using the command `pexp()`.*
+
+```{r}
+# exact probability that the bus arrives in the first 20 minutes
+pexp(20, rate = 1/30)
+```
+
+# Model Genetic Mutations
+
+Consider a 1,000-long gene sequence, where genetic mutations can be modeled as a random variable taking value in $\{0,1\}$.
+
+**(a)** Generate 1,000 random 0-1 variables that model mutations occurring along the gene sequence. These occur independently at a rate of $10^{-4}$ each. *Hint: Relate this case to the arrival of bus example in Problem 2.*
+
+```{r}
+set.seed(1809)
+samples <- rbinom(1000, size = 1, prob = 10^(-4))
+```
+
+
+**(b)** Then the sum of the 1,000 positions is a count of how many mutations have happened in sequences of length 1,000. Take a guess of the distribution for these mutation sums, verify your guess by using a goodness of fit test and make a plot to visualize the quality of the fit.
+
+```{r}
+library("vcd")
+N = 1000
+sum_mutations <- replicate(N, sum(rbinom(1000, size = 1, prob = 10^(-4))))
+gf1 = goodfit(sum_mutations, "poisson")
+rootogram(gf1, xlab = "", rect_gp = gpar(fill = "chartreuse4"))
+```
+
+
+#  Sequence Analysis for DNA
+
+In Lab 0, you have already come up with a nice transition graph of the four DNA bases, i.e., A, C, G, T.
+
+**(a)** Now add transition probability of your choice to each edge. Note that they have to satisfy certain conditions in order to be valid.
+
+**(b)** Write out the associate transition matrix of your graph. Sanity check that your transition matrix also satisfies the conditions in (a).
+
+**(c)** Does there seem to be an absorbing state in your transition matrix? Is it reasonable for a DNA sequence? *Hint: You can do so by taking high matrix powers.*
+
+No absrobing state in the transition matrix, which is reasonable for a DNA sequence. (A != T and G!= C means that the sequence is stranded)
+
+```{r}
+library(igraph)
+library(expm)  
+
+# Copy from Lab 0
+set.seed(1234)
+# generate random transition matrix 4x4 with each row summing to 1
+transition_matrix <- matrix(runif(16), nrow=4, ncol=4)
+transition_matrix <- transition_matrix/rowSums(transition_matrix)
+#convert transition matrix to table with columns A , C, G, T
+colnames(transition_matrix) <- c("A", "C", "G", "T")
+rownames(transition_matrix) <- c("A", "C", "G", "T")
+#plot a graph of transition matrix above with directed edges
+g <- graph.adjacency(transition_matrix, mode="directed", weighted=TRUE)
+plot(g, edge.label=round(E(g)$weight, 2), vertex.size=20, layout=layout.fruchterman.reingold)
+
+#taking high matrix powers
+transition_matrix %^% 100
+```
+
+# Maximum Likelihood Estimator
+
+We saw the maximum likelihood procedures in class when we estimated the transition probabilities in CpG islands, now let's practice how to come up with a maximum likelihood estimator.
+
+**(a)** Write a function that generates random uniform numbers between $0$ and $7$, and then returns their maximum.
+```{r}
+max_unif <- function(n) {
+  max(runif(n, min = 0, max = 7))
+}
+```
+
+**(b)** Execute the function for $n=25$, repeat this procedure $B=1000$ times. Plot the empirical distribution of these $1000$ maxima.
+
+```{r}
+set.seed(1809)
+B = 1000
+maxima <- replicate(B, max_unif(25))
+maxima_df <- data.frame(maxima)
+ggplot(maxima_df, aes(x = maxima)) + 
+  geom_histogram(binwidth = 0.1, fill = "chartreuse4") + 
+  labs(x = "Maximum", y = "Frequency") + 
+  theme_bw()
+maxima_density <- density(maxima)
+maxima_density$x[which.max(maxima_density$y)]
+```
+
+
+**(c)** What is the maximum likelihood estimator of the maximum of a sample of size 25 (call it $\widehat{\theta}$)? Give an intuitive justification of the maximum likelihood estimator.
+
+# Three examples
+
+Give three examples of Hidden Markov Models in Biology.
+Do not use examples that involve sequence analysis, but 
+provide three the references to papers that use HMMs in biology and that provide
+software that enables the reproduction of their results.
+(Bioconductor or CRAN packages are preferred.)
+
+
+1. HMM for animal movement <br>
+https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf <br>
+2. Chromatin Segmentation Analysis (Predict Chromatin State) <br>
+https://bioconductor.org/packages/release/bioc/html/segmenter.html <br>
+3. Character Evolution <br>
+https://cran.r-project.org/web/packages/corHMM/corHMM.pdf
+
+
