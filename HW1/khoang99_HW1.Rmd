@@ -193,8 +193,9 @@ We saw the maximum likelihood procedures in class when we estimated the transiti
 
 **(a)** Write a function that generates random uniform numbers between $0$ and $7$, and then returns their maximum.
 ```{r}
-max_unif <- function(n) {
-  max(runif(n, min = 0, max = 7))
+library(purrr)
+max_unif <- function(n, maxi) {
+  max(purrr::rdunif(n, 0, maxi))
 }
 ```
 
@@ -203,18 +204,85 @@ max_unif <- function(n) {
 ```{r}
 set.seed(1809)
 B = 1000
-maxima <- replicate(B, max_unif(25))
+maxima <- replicate(B, max_unif(25, 7))
 maxima_df <- data.frame(maxima)
 ggplot(maxima_df, aes(x = maxima)) + 
   geom_histogram(binwidth = 0.1, fill = "chartreuse4") + 
   labs(x = "Maximum", y = "Frequency") + 
   theme_bw()
-maxima_density <- density(maxima)
-maxima_density$x[which.max(maxima_density$y)]
 ```
 
 
 **(c)** What is the maximum likelihood estimator of the maximum of a sample of size 25 (call it $\widehat{\theta}$)? Give an intuitive justification of the maximum likelihood estimator.
+
+
+```{r}
+# array of theta form 1 to 10
+theta <- seq(1, 10, 1)
+llh <- function(x, theta) {
+  pmf = replicate(B, max_unif(25, theta))
+  #calculate log likelihood based on probability mass function
+  log_llh = 0
+  for (i in x) {
+    prob = sum(pmf == i)/length(pmf)
+    log_llh = log_llh + log(prob)
+  }
+  return (log_llh)
+}
+# loop through x in maxima and theta in theta
+for (t in theta) {
+  print(c(t ,llh(maxima, t)))
+}
+```
+MLE = 7
+
+Do the same but for continuous uniform distribution and use kernel density to estimate the density function of the empirical distribution of the maxima.
+
+```{r}
+set.seed(1809)
+B = 1000
+max_unif <- function(n, maxi) {
+  max(runif(n, min = 0, max = maxi))
+}
+maxima <- replicate(B, max_unif(25, 7))
+maxima_df <- data.frame(maxima)
+ggplot(maxima_df, aes(x = maxima)) + 
+  geom_histogram(binwidth = 0.1, fill = "chartreuse4") + 
+  labs(x = "Maximum", y = "Frequency") + 
+  theme_bw()
+theta <- seq(6.9, 7.1, 0.01)
+llh <- function(x, theta) {
+  pdf = density(replicate(B, max_unif(25, theta)))
+  #calculate log likelihood based on probability mass function
+  log_llh = 0
+  for (i in x) {
+    # get pdf$x closest to i
+    
+    prob = pdf$y[(which(abs(pdf$x - i)==min(abs(pdf$x - i))))]
+    log_llh = log_llh + log(prob)
+  }
+  return (log_llh)
+}
+
+# loop through x in maxima and theta in theta
+log_llhs = c()
+for (t in theta) {
+  log_llhs = c(log_llhs, llh(maxima, t))
+}
+
+#convert to ggplot and label maximum likelihood with number
+ggplot(data.frame(theta, log_llhs), aes(x = theta, y = log_llhs)) + 
+  geom_line() + 
+  geom_vline(xintercept = theta[which.max(log_llhs)], linetype = "dashed") + 
+  labs(x = "theta", y = "log likelihood") + 
+  theme_bw()
+
+theta[which.max(log_llhs)]
+
+
+```
+MLE = 6.98
+
 
 # Three examples
 

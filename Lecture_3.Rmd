@@ -1,0 +1,361 @@
+---
+title: "Stats 215: Lecture 3"
+author: "Susan Holmes"
+date: "2024-01-16"
+output:  slidy_presentation
+---
+
+<style type="text/css"> 
+.small-code pre code {
+  font-size: 1em;
+}
+body{
+  font-family: Lato;
+  font-size: 18pt;
+}
+h1{
+  font-family: Lato;
+  font-size: 24pt;
+  color: #0080FF;
+}
+h2,h3,h4,h5,h6{
+  font-family: Lato;
+  font-size: 24pt;
+  color: #0080FF;
+}
+</style>
+
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+```
+
+## Reminder:
+
+- Office hour this week today after class and Friday at 3pm in the Sequoia Hall library.
+- Read the book sections, before coming to class, that way you can ask about what isn't clear.
+- Homework 1 is up, you need to do it in R and submit the html or pdf and the source rmd file
+
+
+## From last time:
+
+- Words: 
+
+**Statistical models** 
+
+**Goodness of fit** 
+
+**Estimation** We explained a maximum likelihood 
+ratio. 
+
+**Bioconductor** We saw how to install Bioconductor packages and how to use them.
+
+**CpG islands and Markov chains** We saw how dependencies along DNA sequences can be modeled by Markov chain transitions. We used this to build scores based on likelihood ratios that enable us to see whether long DNA sequences come from CpG islands or not. When we made the histogram of scores, we saw in 
+
+This is the first instance of building a model on some training data: sequences which we knew were in CpG islands, that we could use later to classify new data. 
+
+- Markov Chain
+
+## Goals Today:
+
+ - A few Definitions
+ - Practical implementation, using an rmd file.
+ - Long Term Frequencies in states of a Markov Chain
+ - Hidden Markov Models
+ 
+## Markov property
+
+The distribution of the next value depends only on the one before. 
+
+\(P(X_{n+1} = x_{n+1} | X_n = x_n, X_{n-1} = x_{n-1}, \ldots, X_1 = x_1) = P(X_{n+1} = x_{n+1} | X_n = x_n)\)
+
+
+
+
+## Long Term Frequencies in states of a Markov Chain
+
+
+![Four State Markov chain](https://web.stanford.edu/class/bios221/book/02-chap_files/figure-html/fig-statsfourstateMC-1.png)
+
+
+
+###  Transition matrix
+
+$$
+\left(\begin{array}{cccc}
+T_{11}&T_{12}&\ldots&T_{1n}\\
+T_{21}&T_{22}&\ldots&T_{2n}\\
+\vdots&\vdots&      &\vdots\\
+T_{n1}&T_{n2}&\ldots&T_{nn}\\
+\end{array}\right)
+\mbox{  where  } T_{ij} = P(X_{n+1} = j | X_n = i)
+$$
+----
+
+## Our DNA example
+
+```{r callBios}
+library("Biostrings", quietly = TRUE)
+```
+
+You have to install the Biostrings package using
+
+```
+BiocManager::install("Biostrings")
+```
+
+This will install the `Biostrings` package
+
+
+```{r BiostringExplore, results = "hide", eval = FALSE}
+GENETIC_CODE
+IUPAC_CODE_MAP
+vignette(package = "Biostrings")
+vignette("BiostringsQuickOverview", package = "Biostrings")
+```
+
+```{r BiostringCheck, echo=FALSE, results = "hide"}
+GENETIC_CODE
+IUPAC_CODE_MAP
+```
+
+
+
+```{r BSgenomes}
+library("BSgenome")
+ag = available.genomes()
+length(ag)
+ag[1:2]
+```
+
+
+
+## Modeling in the case of dependencies
+
+Nucleotide sequences are often dependent: the probability of seing a certain nucleotide at a given position tends to depend on the surrounding sequence. Here we are going to put into practice dependency modeling using a **Markov chain**. We are going to look at regions of chromosome 8 of the human genome and try to discover differences between regions called CpG islands and the rest.
+
+```{r chr8HS, cache = FALSE}
+library("BSgenome.Hsapiens.UCSC.hg19")
+chr8  =  Hsapiens$chr8
+CpGtab = read.table("../data/model-based-cpg-islands-hg19.txt",
+                    header = TRUE)
+nrow(CpGtab)
+head(CpGtab)
+irCpG = with(dplyr::filter(CpGtab, chr == "chr8"),
+         IRanges(start = start, end = end))
+```
+
+
+
+
+
+```{r grCpG}
+grCpG = GRanges(ranges = irCpG, seqnames = "chr8", strand = "+")
+genome(grCpG) = "hg19"
+```
+
+```{r CGIview}
+CGIview    = Views(unmasked(Hsapiens$chr8), irCpG)
+NonCGIview = Views(unmasked(Hsapiens$chr8), gaps(irCpG))
+```
+
+```{r CGIview2}
+seqCGI      = as(CGIview, "DNAStringSet")
+seqNonCGI   = as(NonCGIview, "DNAStringSet")
+dinucCpG    = sapply(seqCGI, dinucleotideFrequency)
+dinucNonCpG = sapply(seqNonCGI, dinucleotideFrequency)
+dinucNonCpG[, 1]
+NonICounts = rowSums(dinucNonCpG)
+IslCounts  = rowSums(dinucCpG)
+```
+
+For a four state Markov chain as we have, we define the transition matrix as a matrix where the rows are the `from` state and the columns are the `to` state.
+
+```{r transitions}
+TI  = matrix( IslCounts, ncol = 4, byrow = TRUE)
+TnI = matrix(NonICounts, ncol = 4, byrow = TRUE)
+dimnames(TI) = dimnames(TnI) =
+  list(c("A", "C", "G", "T"), c("A", "C", "G", "T"))
+```
+
+We use the counts of numbers of transitions of each type to compute frequencies and put them into two matrices.
+
+
+```{r MI}
+MI = TI /rowSums(TI)
+MI
+MN = TnI / rowSums(TnI)
+MN
+```
+
+
+
+Are the relative frequencies of the different nucleotides different in CpG islands compared to elsewhere ? 
+
+
+```{r STATI}
+freqIsl = alphabetFrequency(seqCGI, baseOnly = TRUE, collapse = TRUE)[1:4]
+freqIsl / sum(freqIsl)
+freqNon = alphabetFrequency(seqNonCGI, baseOnly = TRUE, collapse = TRUE)[1:4]
+freqNon / sum(freqNon)
+```
+
+This shows an inverse pattern: in the CpG islands, C and G have frequencies around 0.32, whereas in the non-CpG islands, we have A and T that have frequencies around 0.30. 
+
+
+How can we use these differences to decide whether a given sequence comes from a CpG island? 
+
+
+We are going to use the Markov chain to compute the probability of seeing a given sequence, and compare the probability for CpG islands and non-CpG islands.
+
+\begin{align}
+P_{\text{i}}(x = \mathtt{ACGTTATACTACG}) = \;
+&P_{\text{i}}(\mathtt{A})\, P_{\text{i}}(\mathtt{AC})\, P_{\text{i}}(\mathtt{CG})\, P_{\text{i}}(\mathtt{GT})\, P_{\text{i}}(\mathtt{TT}) \times \nonumber\\
+&P_{\text{i}}(\mathtt{TA})\, P_{\text{i}}(\mathtt{AT})\, P_{\text{i}}(\mathtt{TA})\, P_{\text{i}}(\mathtt{AC})\, P_{\text{i}}(\mathtt{CG}). (\#eq:qhyovbditwea) 
+\end{align}
+
+We are going to compare this probability to the probability for non-islands. As we saw above, these probabilities tend to be quite different. We will take their ratio and see if it is larger or smaller than 1. These probabilties are going to be products of many small terms and become very small. We can work around this by taking logarithms.
+
+
+\begin{align}
+\log&\frac{P(x\,|\, \text{island})}{P(x\,|\,\text{non-island})}=\nonumber\\
+\log&\left(
+\frac{P_{\text{i}}(\mathtt{A})\, P_{\text{i}}(\mathtt{A}\rightarrow \mathtt{C})\,
+P_{\text{i}}(\mathtt{C}\rightarrow \mathtt{G})\,
+P_{\text{i}}(\mathtt{G}\rightarrow \mathtt{T})\, P_{\text{i}}(\mathtt{T}\rightarrow \mathtt{T})\, P_{\text{i}}(\mathtt{T}\rightarrow \mathtt{A})}
+{P_{\text{n}}(\mathtt{A})\, P_{\text{n}}(\mathtt{A}\rightarrow \mathtt{C})\, P_{\text{n}}(\mathtt{C}\rightarrow \mathtt{G})\,
+P_{\text{n}}(\mathtt{G}\rightarrow \mathtt{T})\, P_{\text{n}}( \mathtt{T}\rightarrow  \mathtt{T})\, P_{\text{n}}( \mathtt{T}\rightarrow \mathtt{A})} \right. \times\nonumber\\
+&\left.
+\frac{P_{\text{i}}(\mathtt{A}\rightarrow \mathtt{T})\, P_{\text{i}}(\mathtt{T}\rightarrow \mathtt{A})\, P_{\text{i}}(\mathtt{A}\rightarrow \mathtt{C})\,
+P_{\text{i}}(\mathtt{C}\rightarrow \mathtt{G})}
+{P_{\text{n}}(\mathtt{A}\rightarrow \mathtt{T})\, P_{\text{n}}(\mathtt{T}\rightarrow \mathtt{A})\, P_{\text{n}}(\mathtt{A}\rightarrow \mathtt{C})\, P_{\text{n}}(\mathtt{C}\rightarrow \mathtt{G})} \right) (\#eq:oepczihwqnbu) 
+\end{align}
+
+This is the **log-likelihood ratio** score. To speed up the calculation, we compute the log-ratios $\log(P_{\text{i}}(\mathtt{A})/P_{\text{n}}(\mathtt{A})),..., \log(P_{\text{i}}(\mathtt{T}\rightarrow \mathtt{A})/P_{\text{n}}(\mathtt{T}\rightarrow \mathtt{A}))$ once and for all and then sum up the relevant ones to obtain our score.
+
+
+
+```{r alphabeta}
+alpha = log((freqIsl/sum(freqIsl)) / (freqNon/sum(freqNon)))
+beta  = log(MI / MN)
+```
+
+```{r scorepatt}
+x = "ACGTTATACTACG"
+scorefun = function(x) {
+  s = unlist(strsplit(x, ""))
+  score = alpha[s[1]]
+  if (length(s) >= 2)
+    for (j in 2:length(s))
+      score = score + beta[s[j-1], s[j]]
+  score
+}
+scorefun(x)
+```
+
+In the code below, we pick sequences of length `len = 100` out of the `r length(seqCGI)` sequences in the `seqCGI` object, and then out of the `r length(seqNonCGI)` sequences in the `seqNonCGI` object (each of them is a *`r class(seqCGI)`*). In the first three lines of the `generateRandomScores` function, we drop sequences that contain any letters other than [A, C, T, G]{}; such as "." (a character used for undefined nucleotides). Among the remaining sequences, we sample with probabilities proportional to their length minus `len` and then pick subsequences of length `len` out of them. The start points of the subsequences are sampled uniformly, with the constraint that the subsequences have to fit in.
+
+```{r scorefun1}
+generateRandomScores = function(s, len = 100, B = 1000) {
+  alphFreq = alphabetFrequency(s)
+  isGoodSeq = rowSums(alphFreq[, 5:ncol(alphFreq)]) == 0
+  s = s[isGoodSeq]
+  slen = sapply(s, length)
+  prob = pmax(slen - len, 0)
+  prob = prob / sum(prob)
+  idx  = sample(length(s), B, replace = TRUE, prob = prob)
+  ssmp = s[idx]
+  start = sapply(ssmp, function(x) sample(length(x) - len, 1))
+  scores = sapply(seq_len(B), function(i)
+    scorefun(as.character(ssmp[[i]][start[i]+(1:len)]))
+  )
+  scores / len
+}
+scoresCGI    = generateRandomScores(seqCGI)
+scoresNonCGI = generateRandomScores(seqNonCGI)
+```
+
+```{r chap2-r-ScoreMixture-1, fig.keep = 'high', fig.cap = "Island and non-island scores as generated by the function `generateRandomScores`. This is the first instance of a **mixture** we encounter. We will revisit them in our section on Mixtures and the EM algorithm."}
+rgs = range(c(scoresCGI, scoresNonCGI))
+br = seq(rgs[1], rgs[2], length.out = 50)
+h1 = hist(scoresCGI,    breaks = br, plot = FALSE)
+h2 = hist(scoresNonCGI, breaks = br, plot = FALSE)
+plot(h1, col = rgb(0, 0, 1, 1/4), xlim = c(-0.5, 0.5), ylim=c(0,120))
+plot(h2, col = rgb(1, 0, 0, 1/4), add = TRUE)
+```
+
+```{r savescoresforChap4, echo = FALSE, eval=FALSE}
+###This is for provenance reasons, keep track of how the data
+###were generated for the EM exercise in Chapter 4.
+Mdata=c(scoresCGI,scoresNonCGI)
+MM1=sample(Mdata[1:1000],800)
+MM2=sample(Mdata[1001:2000],1000)
+Myst=c(MM1,MM2);names(Myst)=NULL
+saveRDS(c(MM1,MM2),"../data/Myst.rds")
+###True value of m1,m2,s1 and s2
+###
+```
+
+```{r checkhists, echo = FALSE}
+stopifnot(max(h1$counts) < 120, max(h2$counts) < 120,
+          h1$breaks[1] >= br[1], h1$breaks[length(h1$breaks)] <= br[length(br)],
+          h2$breaks[1] >= br[1], h2$breaks[length(h2$breaks)] <= br[length(br)])
+```
+
+We can consider these our *training data*: from data for which we know the types, we can see whether our score is useful for discriminating.
+
+## Longterm Empirical and Theoretical frequencies
+
+```{r longterm}
+## in the CpG islands
+freqIsl / sum(freqIsl)
+```
+
+```{r longterm2}
+## in the non-CpG islands
+freqNon / sum(freqNon)
+```
+
+Now we do the theoretical computation using the power of the
+transition matrix.
+
+We need to use a special package for this.
+`library(expm)` that we first install
+with `install.packages("expm")`
+
+
+```{r longterm1t}
+## in the CpG islands
+## transition matrix to a high power
+library("expm")
+theorFreqIsl = MI %^%  100
+theorFreqIsl 
+```
+
+```{r longterm2t}
+## in the non-CpG islands
+## transition matrix to a high power
+
+theorFreqNon = MN %^% 100
+theorFreqNon 
+```
+
+
+Further HMM in probabilistic sequence analysis
+
+- Slides from UW we are going to look into: [Slides CSE 527](https://courses.cs.washington.edu/courses/csep527/16sp/slides/06hmms.pdf)
+
+- A paper [Yoon on alignment](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2766791/)
+
+- A book [Durbin,Eddy, Krogh and Mitchison](https://www.amazon.com/Biological-Sequence-Analysis-Probabilistic-Proteins/dp/0521629713)
+
+- We are going to do a demo now, see the [Demo_HMM.Rmd](https://canvas.stanford.edu/files/12791369/download?download_frd=1) file on canvas.
+
+## Language models
+
+- Tagging is like genome annotation (what is the function of this gene?)
+
+- Explanation of Viterbi algorithm
